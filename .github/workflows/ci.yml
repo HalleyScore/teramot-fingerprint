@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: gofmt
+        run: make lint
+
+      - name: vet
+        run: go vet ./...
+
+      - name: test
+        run: go test -race ./...
+
+      # FP-1.1's acceptance: `go get` from a clean module compiles. This module is consumed by
+      # three separate repos, so "it builds in its own checkout" is not the property that matters —
+      # a stdlib-only module with a bad go.mod or an unexported name still passes that and then
+      # fails on first import. Building a throwaway consumer outside the repo is the real check.
+      - name: consumable from a clean module
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/consumer" && cd "$RUNNER_TEMP/consumer"
+          go mod init example.com/consumer
+          go mod edit -replace github.com/HalleyScore/teramot-fingerprint="$GITHUB_WORKSPACE"
+          go mod edit -require github.com/HalleyScore/teramot-fingerprint@v0.0.0
+          cat > main.go <<'GO'
+          package main
+
+          import (
+              "context"
+              "fmt"
+
+              fp "github.com/HalleyScore/teramot-fingerprint"
+          )
+
+          func main() {
+              f := fp.RunFingerprint{
+                  Joins:             []fp.Join{{Left: "a.x", Right: "b.y", MatchRate: fp.RateOf(0.97), Evidence: fp.Declared}},
+                  RowCountMagnitude: fp.MagnitudeOf(1_126_156),
+              }
+              if err := f.Validate(); err != nil {
+                  panic(err)
+              }
+              // Exercise the measurement path with a stub Scalar, so a signature change here
+              // breaks the build rather than a consumer's.
+              stub := func(context.Context, string, ...any) (int64, error) { return 10, nil }
+              rate, err := fp.MatchRate(context.Background(), stub,
+                  fp.ColumnRef{Table: "a", Column: "x"}, fp.ColumnRef{Table: "b", Column: "y"}, fp.Options{})
+              if err != nil {
+                  panic(err)
+              }
+              fmt.Println(len(f.ToHashed([]byte("salt")).Joins), rate)
+          }
+          GO
+          go mod tidy
+          go build ./...
+          ./consumer
