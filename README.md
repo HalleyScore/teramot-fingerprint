@@ -32,6 +32,11 @@ an index.
 This module has **no dependencies** outside the standard library, deliberately: it sits in the
 import graph of three services, and anything it pulls in, they all pull in.
 
+For the same reason its `go` directive names the **lowest** version it actually needs, not the
+newest available. A leaf library that over-declares drags every consumer's toolchain forward on
+`go get` — the first fetch into `teramot-aleph` bumped that module from 1.25.3 to 1.26.7 before
+this was corrected.
+
 ## The two rules everything here follows
 
 **1. Absent is not zero.** Every optional measurement is a pointer.
