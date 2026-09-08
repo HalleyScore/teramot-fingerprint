@@ -1,0 +1,41 @@
+# Runs `@claude review` on a PR here, the same way the sibling repositories do.
+#
+# `statuses: read` is not optional. Commit statuses are a third API, separate from `actions: read`
+# and `checks: read`, and teramot-dx's reusable workflow requests it. A caller that withholds a
+# permission the callee asks for fails at STARTUP — no jobs, no log, and no failed check on the PR,
+# so it reads as the bot ignoring you rather than as a misconfiguration.
+name: PR Claude Code Agent
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  call-review:
+    uses: HalleyScore/teramot-dx/.github/workflows/pr-agent.yaml@main
+    # Matches on the comment's PREFIX, so a bare `@claude review` fires and the same mention
+    # appended to a long comment does not.
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '@claude ')
+    secrets: inherit
+    permissions:
+      actions: read
+      checks: read
+      statuses: read
+      contents: write
+      pull-requests: write
+      id-token: write
+    with:
+      repository: ${{ github.repository }}
+      pr: ${{ github.event.issue.number }}
+      # The one job in ci.yml, named as its `name:` renders it. The reviewer waits for it and reads
+      # the verdict rather than re-running the same gates — including the clean-consumer check,
+      # which is this module's real acceptance and costs a module download to repeat.
+      required_checks: |
+        check
+      setup: |
+        go mod download
+      extra_allowed_tools: |
+        Bash(go build ./...)
+        Bash(go vet ./...)
+        Bash(go test ./...)
+        Bash(gofmt -l .)
