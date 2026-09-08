@@ -38,7 +38,7 @@ var errProbe = errors.New("permission denied for table")
 
 func ref(t, c string) fp.ColumnRef { return fp.ColumnRef{Table: t, Column: c} }
 
-// FP-1.3's acceptance, clause by clause.
+// The measurement contract, clause by clause.
 func TestMatchRateAcceptance(t *testing.T) {
 	ctx := context.Background()
 

@@ -103,9 +103,8 @@ func (o Options) bound() int64 {
 
 // MatchRate is the fraction of the LEFT side's distinct values present on the right, in [0,1].
 //
-// Ported from `Teramot-Light/light`, `packages/core/src/light_core/instruction_check.py`
-// (`coverage`), which is where this measurement was first written and calibrated. Two details are
-// carried over deliberately:
+// Ported from an earlier Python implementation where this measurement was first written and
+// calibrated against real ERP schemas. Two details are carried over deliberately:
 //
 //   - DISTINCT on the left, not row count. A key repeated a million times on one side would
 //     otherwise dominate the fraction and report a healthy join as broken, or the reverse.
@@ -143,7 +142,7 @@ func MatchRate(ctx context.Context, q Scalar, left, right ColumnRef, opts Option
 
 	// LIMIT bound+1 rather than LIMIT bound: reading one row past the cap is how the query
 	// reports "there were more" instead of silently handing back a truncated count that looks
-	// complete. Same fail-visible shape aleph's usage repository uses for its bucket cap.
+	// complete, rather than a truncated count that reads as the whole answer.
 	total, err := q(ctx, fmt.Sprintf(
 		`SELECT count(*) FROM (SELECT DISTINCT CAST(%s AS VARCHAR) AS k FROM %s LIMIT %d) t`,
 		lc, lt, bound+1,

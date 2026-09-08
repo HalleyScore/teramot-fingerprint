@@ -32,7 +32,7 @@ func fixture() fp.RunFingerprint {
 	}
 }
 
-// FP-1.4's acceptance, verbatim: the hashed JSON contains no identifier from the fixture.
+// The hashed JSON must contain no identifier from the fixture.
 func TestHashedJSONLeaksNoIdentifier(t *testing.T) {
 	blob, err := json.Marshal(fixture().ToHashed([]byte("a-real-salt")))
 	if err != nil {

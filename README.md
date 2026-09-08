@@ -18,16 +18,16 @@ rate, err := fp.MatchRate(ctx, fp.ScalarFromDB(db),
 
 ## Three consumers, which is why this is a module
 
-| repo | role |
+| consumer | role |
 |---|---|
-| **`teramot-aleph`** | **computes** a fingerprint at run time — the only component holding the SQL and the live connection |
-| **`teramot-lambda`** | **parses** one and compares it against a frozen baseline, to produce the decay index |
-| **`teramot-spectra`** | third consumer, for its joins dimension |
+| the **query engine** | **computes** a fingerprint at run time — the only component holding the SQL and the live connection |
+| the **monitor** | **parses** one and compares it against a frozen baseline, to produce an index |
+| a third service | reads the joins |
 
-`aleph/shared/` cannot serve this: it is wired with `replace ../shared`, so it is consumable only
-from inside the aleph monorepo. Three separate implementations of one measurement would drift, and
-then the decay index stops being comparable between programs — which is the entire point of having
-an index.
+The engine's own internal shared package cannot serve this: it is wired with a local `replace`, so
+it is consumable only from inside that monorepo. Three separate implementations of one measurement
+would drift, and then the index stops being comparable between services — which is the entire point
+of having an index.
 
 This module has **no dependencies** outside the standard library, deliberately: it sits in the
 import graph of three services, and anything it pulls in, they all pull in.
@@ -73,8 +73,7 @@ runs on its own, and a comparator flipping green/degraded from noise gets switch
 
 The fraction of the **left side's distinct values** present on the right, compared **as text**.
 
-Both details are ported from `Teramot-Light/light`
-(`packages/core/src/light_core/instruction_check.py`, `coverage`), where this measurement was first
+Both details are ported from an earlier Python implementation, where this measurement was first
 written and calibrated against real ERP schemas:
 
 - **DISTINCT, not row count** — a key repeated a million times on one side would otherwise dominate
@@ -114,8 +113,7 @@ make check   # gofmt + vet + go test -race
 
 ## Status
 
-`FP-1` complete: the type, `MatchRate`, both serializations and the magnitude helper, with the
-plan's acceptance tests. Not yet imported by anything — `D2.0a` (aleph emitting fingerprints) and
-`D2.2` (Lambda's comparator) are the first consumers.
-
-The plan of record is `Teramot New Age/PLAN-01-LAMBDA-REPO.md` in `solsoletti/teramot-documentation`.
+Complete and tagged: the type, `MatchRate`, both serializations and the magnitude helper, each with
+the acceptance tests its specification called for. Pre-1.0 — the type is expected to gain fields as
+its consumers find what a comparator actually needs, and adding a field is additive for anything
+reading the JSON.

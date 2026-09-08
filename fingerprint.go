@@ -1,17 +1,17 @@
 // Package fingerprint is the shared record of HOW a query run reached its answer.
 //
-// It is a module rather than a package inside teramot-aleph because three repositories need the
-// same type and cannot share one any other way:
+// It is a module rather than a package inside any one service because three separate services
+// need the same type and cannot share one any other way:
 //
-//   - teramot-aleph COMPUTES a fingerprint at run time. It is the only component holding the SQL
-//     and the live connection.
-//   - teramot-lambda PARSES one and compares it against a frozen baseline.
-//   - teramot-spectra is the third consumer, for its joins dimension.
+//   - the QUERY ENGINE computes a fingerprint at run time. It is the only component holding the
+//     SQL and the live connection.
+//   - the MONITOR parses one and compares it against a frozen baseline.
+//   - a third consumer reads the joins.
 //
-// `aleph/shared/` cannot serve it: that directory is wired with `replace ../shared`, so it is
-// consumable only from inside the aleph monorepo. Three separate implementations of one
-// measurement would drift, and the decay index would stop being comparable between programs —
-// which is the entire point of having an index.
+// The engine's own internal shared package cannot serve it: that directory is wired with a local
+// `replace`, so it is consumable only from inside that monorepo. Three separate implementations of
+// one measurement would drift, and the index built on them would stop being comparable between
+// services — which is the entire point of having an index.
 //
 // # The rule this type exists to enforce
 //

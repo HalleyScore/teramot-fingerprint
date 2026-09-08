@@ -9,7 +9,7 @@ import (
 	fp "github.com/HalleyScore/teramot-fingerprint"
 )
 
-// FP-1.2's acceptance: JSON round-trips without loss, and the optional fields distinguish "zero"
+// JSON round-trips without loss, and the optional fields distinguish "zero"
 // from "absent".
 func TestRoundTripIsLossless(t *testing.T) {
 	in := fp.RunFingerprint{
@@ -107,7 +107,7 @@ func TestUnverifiedListsTheJoinsWithNoRate(t *testing.T) {
 	}
 }
 
-// FP-1.5's acceptance, verbatim from the plan.
+// Order of magnitude, not the value.
 func TestMagnitude(t *testing.T) {
 	if a, b := fp.Magnitude(10_200_000_000), fp.Magnitude(9_900_000_000); a != b {
 		t.Errorf("10.2e9 and 9.9e9 gave different magnitudes (%d vs %d); they must agree", a, b)
